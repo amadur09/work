@@ -1,0 +1,40 @@
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+# Load dataset
+df = pd.read_csv('social_media_data.csv')
+
+# Text preprocessing
+df['clean_text'] = df['text'].str.lower()
+df['clean_text'] = df['clean_text'].str.replace('[^a-zA-Z]', ' ')
+stop_words = set(stopwords.words('english'))
+df['clean_text'] = df['clean_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
+
+# Tokenization
+df['tokens'] = df['clean_text'].apply(word_tokenize)
+
+from nltk.sentiment import SentimentIntensityAnalyzer
+
+sia = SentimentIntensityAnalyzer()
+df['sentiment_score'] = df['clean_text'].apply(lambda x: sia.polarity_scores(x)['compound'])
+df['sentiment'] = df['sentiment_score'].apply(lambda x: 'positive' if x > 0.05 else 'negative' if x < -0.05 else 'neutral')
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Sentiment distribution
+sns.countplot(x='sentiment', data=df, palette='viridis')
+plt.title('Sentiment Distribution')
+plt.show()
+
+# Word Cloud
+from wordcloud import WordCloud
+
+all_words = ' '.join([text for text in df['clean_text']])
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(all_words)
+plt.figure(figsize=(10, 6))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.show()
